@@ -1,47 +1,47 @@
 import numpy as np
-import pandas as pd
-from statsmodels.regression.linear_model import OLS, WLS
-from statsmodels.tools.tools import add_constant
 import statsmodels.api as sm
+from statsmodels.regression.linear_model import OLS, WLS
 from tabulate import tabulate
+from skmisc import loess
 
 # Define the data
 Y = np.array([1, 0, 1, 4, 3, 2, 5, 6, 9, 13, 15, 16])
-X = np.array([[1, 1, 1], [1, 2, 1], [1, 2, 2], [1, 3, 2], [1, 5, 4], [1, 5, 6],
-              [1, 6, 5], [1, 7, 4], [1, 10, 8], [1, 11, 7], [1, 11, 9], [1, 12, 10]])
+X = np.array([[1, 1], [2, 1], [2, 2], [3, 2], [5, 4], [5, 6], [6, 5], [7, 4], [10, 8], [11, 7], [11, 9], [12, 10]])
 
-# Perform OLS
-model_ols = OLS(Y, add_constant(X[:, 1:])).fit()
+# Add a constant (intercept) for statsmodels
+X_with_intercept = sm.add_constant(X)
 
-# Perform LOWESS to get weights (dummy weights used here for illustration)
-predicted_ols = model_ols.predict()
-residuals_ols = Y - predicted_ols
-weights = 1 / (residuals_ols**2 + 1e-8)  # Adding small constant to avoid division by zero
+# OLS model
+ols_model = OLS(Y, X_with_intercept)
+ols_results = ols_model.fit()
 
-# Perform WLS
-model_wls = WLS(Y, add_constant(X[:, 1:]), weights=weights).fit()
+# Printing OLS Results
+print("OLS Results:")
+print(f"{'Parameter':<12} {'Estimate':<10} {'Std. Error':<12} {'t value':<9} {'Pr(>|t|)':<10}")
+for i, param in enumerate(ols_results.params):
+    print(f"{ols_results.model.exog_names[i]:<12} {param:<10.4f} {ols_results.bse[i]:<12.4f} {ols_results.tvalues[i]:<9.4f} {ols_results.pvalues[i]:<10.4f}")
 
-def print_model_summary(model, model_type):
-    print(f"{model_type} Results:")
-    
-    # Prepare data for tabulate
-    data = []
-    for i, param in enumerate(['Intercept', 'X1', 'X2']):
-        data.append([
-            param,
-            f"{model.params[i]:.4f}",
-            f"{model.bse[i]:.4f}",
-            f"{model.tvalues[i]:.4f}",
-            f"{model.pvalues[i]:.4f}"
-        ])
-    
-    headers = ["Parameter", "Estimate", "Std. Error", "t value", "Pr(>|t|)"]
-    print(tabulate(data, headers=headers, tablefmt="grid"))
-    
-    print(f"R-squared: {model.rsquared:.4f}, Adjusted R-squared: {model.rsquared_adj:.4f}")
-    print(f"F-statistic: {model.fvalue:.2f} on {model.df_model:.0f} and {model.df_resid:.0f} DF, p-value: {model.f_pvalue:.3e}")
+print(f"\nR-squared: {ols_results.rsquared:.4f}, Adjusted R-squared: {ols_results.rsquared_adj:.4f}")
+print(f"F-statistic: {ols_results.fvalue:.2f} on {ols_results.df_model:.0f} and {ols_results.df_resid:.0f} DF, p-value: {ols_results.f_pvalue:.4e}\n")
 
-# Print results
-print_model_summary(model_ols, "OLS")
-print()  # Add an empty line between OLS and WLS results
-print_model_summary(model_wls, "WLS")
+# LOESS for WLS weights
+loess_model = loess.loess(X[:, 0], Y, span=0.90, degree=2)
+loess_model.fit()
+fitted_values = loess_model.predict(X[:, 0]).values  # Extract fitted values correctly
+
+# Calculate residuals and weights for WLS
+residuals = Y - fitted_values
+weights = 1 / (residuals**2 + 1e-8)  # Adding small constant to avoid division by zero
+
+# WLS model
+wls_model = WLS(Y, X_with_intercept, weights=weights)
+wls_results = wls_model.fit()
+
+# Printing WLS Results
+print("\nWLS Results:")
+print(f"{'Parameter':<12} {'Estimate':<10} {'Std. Error':<12} {'t value':<9} {'Pr(>|t|)':<10}")
+for i, param in enumerate(wls_results.params):
+    print(f"{wls_results.model.exog_names[i]:<12} {param:<10.4f} {wls_results.bse[i]:<12.4f} {wls_results.tvalues[i]:<9.4f} {wls_results.pvalues[i]:<10.4f}")
+
+print(f"\nR-squared: {wls_results.rsquared:.4f}, Adjusted R-squared: {wls_results.rsquared_adj:.4f}")
+print(f"F-statistic: {wls_results.fvalue:.1f} on {wls_results.df_model:.1f} and {wls_results.df_resid:.1f} DF, p-value: {wls_results.f_pvalue:.4e}")
