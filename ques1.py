@@ -37,11 +37,19 @@ weights = 1 / (residuals**2 + 1e-8)  # Adding small constant to avoid division b
 wls_model = WLS(Y, X_with_intercept, weights=weights)
 wls_results = wls_model.fit()
 
+# Calculate weighted residuals
+weighted_residuals = wls_results.resid / np.sqrt(weights)
+
 # Printing WLS Results
 print("\nWLS Results:")
 print(f"{'Parameter':<12} {'Estimate':<10} {'Std. Error':<12} {'t value':<9} {'Pr(>|t|)':<10}")
 for i, param in enumerate(wls_results.params):
     print(f"{wls_results.model.exog_names[i]:<12} {param:<10.4f} {wls_results.bse[i]:<12.4f} {wls_results.tvalues[i]:<9.4f} {wls_results.pvalues[i]:<10.4f}")
 
-print(f"\nR-squared: {wls_results.rsquared:.4f}, Adjusted R-squared: {wls_results.rsquared_adj:.4f}")
+# Printing Weighted Residuals in specified format
+print("\nWeighted Residuals:")
+print(f"{'Min':<8} {'1Q':<12} {'Median':<10} {'3Q':<9} {'Max':<10}")
+print(f"{np.min(weighted_residuals):<8.4f} {np.percentile(weighted_residuals, 25):<12.4f} {np.median(weighted_residuals):<10.4f} {np.percentile(weighted_residuals, 75):<9.4f} {np.max(weighted_residuals):<10.4f}")
+
+print("\nR-squared: {:.4f}, Adjusted R-squared: {:.4f}".format(wls_results.rsquared, wls_results.rsquared_adj))
 print(f"F-statistic: {wls_results.fvalue:.1f} on {wls_results.df_model:.1f} and {wls_results.df_resid:.1f} DF, p-value: {wls_results.f_pvalue:.4e}")
