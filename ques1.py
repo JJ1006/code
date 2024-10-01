@@ -27,36 +27,27 @@ weights = 1 / (residuals**2 + 1e-8)  # Adding small constant to avoid division b
 # Perform WLS
 model_wls = WLS(Y, X_with_const, weights=weights).fit()
 
-def print_header(text):
-    print("\n" + "=" * 60)
-    print(f"{text:^60}")
-    print("=" * 60 + "\n")
-
-def print_model_summary(model, title):
-    print_header(title)
-    summary = model.summary()
-    print(summary)
-
-def print_comparison(ols_model, wls_model):
-    print_header("Comparison of OLS and WLS Results")
+def print_model_summary(model, model_type):
+    print(f"{model_type} Results:")
     
     # Prepare data for tabulate
     data = []
     for i, param in enumerate(['Intercept', 'X1', 'X2']):
         data.append([
             param,
-            f"{ols_model.params[i]:.4f}",
-            f"{wls_model.params[i]:.4f}",
-            f"{ols_model.pvalues[i]:.4f}",
-            f"{wls_model.pvalues[i]:.4f}"
+            f"{model.params[i]:.4f}",
+            f"{model.bse[i]:.4f}",
+            f"{model.tvalues[i]:.4f}",
+            f"{model.pvalues[i]:.4f}"
         ])
     
-    headers = ["Parameter", "OLS Estimate", "WLS Estimate", "OLS p-value", "WLS p-value"]
-    print(tabulate(data, headers=headers, tablefmt="grid"))
+    headers = ["Parameter", "Estimate", "Std. Error", "t value", "Pr(>|t|)"]
+    print(tabulate(data, headers=headers, tablefmt="simple"))
     
-    print(f"OLS R-squared: {ols_model.rsquared:.4f}")
+    print(f"R-squared: {model.rsquared:.4f}, Adjusted R-squared: {model.rsquared_adj:.4f}")
+    print(f"F-statistic: {model.fvalue:.2f} on {model.df_model} and {model.df_resid} DF, p-value: {model.f_pvalue:.3e}")
 
 # Print results
-print_model_summary(model_ols, "OLS Regression Results")
-print_model_summary(model_wls, "WLS Regression Results")
-print_comparison(model_ols, model_wls)
+print_model_summary(model_ols, "OLS")
+print()  
+print_model_summary(model_wls, "WLS")
