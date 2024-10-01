@@ -54,9 +54,7 @@ def print_comparison(ols_model, wls_model):
     headers = ["Parameter", "OLS Estimate", "WLS Estimate", "OLS p-value", "WLS p-value"]
     print(tabulate(data, headers=headers, tablefmt="grid"))
     
-    print("\nR-squared Comparison:")
     print(f"OLS R-squared: {ols_model.rsquared:.4f}")
-    print(f"WLS R-squared: {wls_model.rsquared:.4f}")
 
 # Print results
 print_model_summary(model_ols, "OLS Regression Results")
